@@ -120,7 +120,7 @@ public class CbDao {
 		try {
 			cluster = CouchbaseCluster.create( ipList );
 			Bucket bucket = cluster.openBucket( bName, bPass);
-			this.buckets.put( bName, bucket);
+			this.getBuckets().put( bName, bucket);
 			
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -134,7 +134,7 @@ public class CbDao {
 		Bucket returnobj = null;
 		
 		try {
-			returnobj = this.buckets.get( bucketname );
+			returnobj = this.getBuckets().get( bucketname );
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -147,7 +147,7 @@ public class CbDao {
 	public void destroyConnection(String bucketname) {
 		try {
 			//this.ioLogger.logTo(this.LOGFILE, Level.INFO, "destroyingConnection to : " + bucketname );
-			this.buckets.get(bucketname).close();
+			this.getBuckets().get(bucketname).close();
 		} catch (Exception e) {
 			//this.ioLogger.logTo(this.LOGFILE, Level.ERROR, "destroyingConnection to : " + bucketname + " : error : " + e.getMessage());
 			e.printStackTrace();
@@ -169,7 +169,7 @@ public class CbDao {
 		
 		try {
 			ViewQuery viewQuery = ViewQuery.from(designDoc, viewName);
-			bucket.query(viewQuery);
+			
 			ViewResult viewResult = bucket.query( viewQuery );
 			Iterator<ViewRow> viewResults = viewResult.rows();
 			
@@ -310,6 +310,10 @@ public class CbDao {
 	
 	public void setSessionEntityTimeout(int sessionEntityTimeout) {
 		this.sessionEntityTimeout = sessionEntityTimeout;
+	}
+
+	public HashMap<String,Bucket> getBuckets() {
+		return buckets;
 	}
 	
 }

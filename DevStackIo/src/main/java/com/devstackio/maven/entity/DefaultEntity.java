@@ -7,7 +7,11 @@ package com.devstackio.maven.entity;
 public class DefaultEntity {
 	
 	protected String id;
-
+	private String prefix;
+	
+	public DefaultEntity() {
+		this.prefix = this.getClass().getSimpleName();
+	}
 	public String getId() {
 		return id;
 	}
@@ -16,6 +20,9 @@ public class DefaultEntity {
 	}
 	public String getPrefix() {
 		return this.getClass().getSimpleName();
+	}
+	public void setPrefix(String prefix) {
+		this.prefix = prefix;
 	}
 	
 }

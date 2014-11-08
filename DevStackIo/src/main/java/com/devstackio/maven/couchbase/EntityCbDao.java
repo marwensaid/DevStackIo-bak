@@ -28,9 +28,9 @@ public abstract class EntityCbDao implements IEntityDao {
 	protected String bucketName;
 	protected Gson gson;
 	protected UuidGenerator uuidGenerator;
-	private CbDao cbDao;
-	private IoLogger ioLogger;
-	private AbstractAppData appData;
+	protected CbDao cbDao;
+	protected IoLogger ioLogger;
+	protected AbstractAppData appData;
 	
 	/**
 	 * bucket name used for all crud ops on sub entity object
@@ -89,11 +89,11 @@ public abstract class EntityCbDao implements IEntityDao {
 			returnobj = prefix+":"+entity.getId();
 			JsonDocument jsonDocument = this.JsonObjectToJsonDocument( returnobj, jsonObj );
 			bucket.insert( jsonDocument,PersistTo.MASTER );
-			System.out.println("-- tried upsert on : " + jsonDocument + " --");
+			String logMsg = "-- tried upsert on : " + jsonDocument + " --";
+			this.ioLogger.logTo("DevStackIo-debug", Level.INFO, logMsg);
 			
 		} catch (DocumentAlreadyExistsException e) {
-			this.ioLogger.logTo("DocAlreadyExists", Level.INFO, "document : " + returnobj + " already exists in couchbase.");
-			System.out.println("[ EntityCbDao ] DocAlreadyExists : " + returnobj + " already exists in couchbase.");
+			this.ioLogger.logTo("DevStackIo-debug", Level.INFO, "document : " + returnobj + " already exists in couchbase.");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -139,15 +139,14 @@ public abstract class EntityCbDao implements IEntityDao {
 			returnobj = this.convert( bucket.get(docId) );
 			
 		} catch (NullPointerException e) {
-			this.ioLogger.logTo("DocDoesNotExist", Level.INFO, "document : " + docId + " not found in couchbase.");
-			System.out.println("[ EntityCbDao ] DocDoesNotExist : " + docId + " not found in couchbase.");
+			this.ioLogger.logTo("DevStackIo-debug", Level.INFO, "document : " + docId + " not found in couchbase.");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return returnobj;
 	}
 	/**
-	 * if document does not exist in couchbase it will be created
+	 * if document does not exist in couchbase will return null
 	 * @param entityobj
 	 * @return 
 	 */
@@ -160,14 +159,13 @@ public abstract class EntityCbDao implements IEntityDao {
 		try {
 			entity = (DefaultEntity) entityobj;
 			docId = entity.getPrefix()+":"+this.appData.getUuid();
+			String logMsg = "trying readFromSession using docid : " + docId + " bucket is : " + bucket;
+			this.ioLogger.logTo("DevStackIo-debug", Level.INFO, logMsg);
 			entity.setId( docId );
 			returnobj = this.convert( bucket.get(docId) );
 			
-		} catch (ClassCastException e) {
-			this.create( returnobj );
-			
 		} catch (NullPointerException e) {
-			e.printStackTrace();
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -191,11 +189,11 @@ public abstract class EntityCbDao implements IEntityDao {
 			JsonDocument jsonDocument = this.JsonObjectToJsonDocument( docId, jsonObj );
 			
 			bucket.replace( jsonDocument,PersistTo.MASTER );
-			System.out.println("-- tried replace on : " + jsonDocument + " --");
+			String logMsg = "-- tried replace on : " + jsonDocument + " --";
+			this.ioLogger.logTo("DevStackIo-debug", Level.INFO, logMsg);
 			
 		} catch (DocumentDoesNotExistException e) {
-			this.ioLogger.logTo("DocDoesNotExist", Level.INFO, "document : " + docId + " not found in couchbase.");
-			System.out.println("[ EntityCbDao ] DocDoesNotExist : " + docId + " not found in couchbase.");
+			this.ioLogger.logTo("DevStackIo-debug", Level.INFO, "document : " + docId + " not found in couchbase.");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -207,16 +205,16 @@ public abstract class EntityCbDao implements IEntityDao {
 		String docId = "";
 		try {
 			DefaultEntity entity = (DefaultEntity) entityobj;
-			docId = entity.getPrefix()+":"+this.appData.getUuid();
+			docId = entity.getPrefix()+":"+this.getAppData().getUuid();
+			String logMsg = "update to session call : docid is : " + docId;
+			this.ioLogger.logTo("DevStackIo-debug", Level.INFO, logMsg);
 			JsonObject jsonObj = this.EntityToJsonObject( entity );
 			JsonDocument jsonDocument = this.JsonObjectToJsonDocument( docId, jsonObj );
 			
 			bucket.replace( jsonDocument,PersistTo.MASTER );
-			System.out.println("-- tried updateToSession on : " + jsonDocument + " --");
 			
 		} catch (DocumentDoesNotExistException e) {
-			this.ioLogger.logTo("DocDoesNotExist", Level.INFO, "document : " + docId + " not found in couchbase.");
-			System.out.println("[ EntityCbDao ] DocDoesNotExist : " + docId + " not found in couchbase.");
+			this.ioLogger.logTo("DevStackIo-debug", Level.INFO, "document : " + docId + " not found in couchbase.");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
