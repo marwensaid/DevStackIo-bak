@@ -146,19 +146,28 @@ public abstract class EntityCbDao implements IEntityDao {
 		}
 		return returnobj;
 	}
+	/**
+	 * if document does not exist in couchbase it will be created
+	 * @param entityobj
+	 * @return 
+	 */
 	public Object readFromSession( Object entityobj ) {
 		
 		Object returnobj = new Object();
 		Bucket bucket = this.getBucket();
 		String docId = "";
+		DefaultEntity entity = new DefaultEntity();
 		try {
-			DefaultEntity entity = (DefaultEntity) entityobj;
+			entity = (DefaultEntity) entityobj;
 			docId = entity.getPrefix()+":"+this.appData.getUuid();
+			entity.setId( docId );
 			returnobj = this.convert( bucket.get(docId) );
 			
+		} catch (ClassCastException e) {
+			this.create( returnobj );
+			
 		} catch (NullPointerException e) {
-			this.ioLogger.logTo("DocDoesNotExist", Level.INFO, "document : " + docId + " not found in couchbase.");
-			System.out.println("[ EntityCbDao ] DocDoesNotExist : " + docId + " not found in couchbase.");
+			e.printStackTrace();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

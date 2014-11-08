@@ -37,5 +37,20 @@ public class PropertyLoader {
 		return returnobj;
 		
 	}
+	/**
+	 * used to grab Properties if needed @ ApplicationContextListener
+	 * @param thread
+	 * @return 
+	 */
+	public Properties loadFromContextListener( String filepath ) {
+		
+		Properties returnobj = new Properties();
+		try {
+			returnobj.load(Thread.currentThread().getContextClassLoader().getResourceAsStream( filepath ));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return returnobj;
+	}
 	
 }
