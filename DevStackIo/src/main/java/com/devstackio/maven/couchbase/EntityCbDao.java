@@ -192,6 +192,27 @@ public abstract class EntityCbDao implements IEntityDao {
 		}
 		
 	}
+	public void updateToSession( Object entityobj ) {
+		
+		Bucket bucket = this.getBucket();
+		String docId = "";
+		try {
+			DefaultEntity entity = (DefaultEntity) entityobj;
+			docId = entity.getPrefix()+":"+this.appData.getUuid();
+			JsonObject jsonObj = this.EntityToJsonObject( entity );
+			JsonDocument jsonDocument = this.JsonObjectToJsonDocument( docId, jsonObj );
+			
+			bucket.replace( jsonDocument,PersistTo.MASTER );
+			System.out.println("-- tried updateToSession on : " + jsonDocument + " --");
+			
+		} catch (DocumentDoesNotExistException e) {
+			this.ioLogger.logTo("DocDoesNotExist", Level.INFO, "document : " + docId + " not found in couchbase.");
+			System.out.println("[ EntityCbDao ] DocDoesNotExist : " + docId + " not found in couchbase.");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+	}
 	/**
 	 * persists to Master node
 	 * @param docid 
