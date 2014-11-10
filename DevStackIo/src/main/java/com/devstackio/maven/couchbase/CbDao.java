@@ -22,7 +22,7 @@ import javax.inject.Inject;
 @ApplicationScoped
 public class CbDao {
 	
-	private Cluster cluster;
+	private static Cluster cluster;
 	private HashMap<String,Bucket> buckets;
 	private IoLogger ioLogger;
 
@@ -45,42 +45,43 @@ public class CbDao {
 	}
 	
 	/**
-	 * saves and creates new couchbase bucket to hashMap
+	 * creates cluster connection
 	 * should be called from contextInitialized [ ServletContextListener ]
 	 * @param ips ip of server ex: {"127.0.0.1", "devstackio.com"}
 	 * @param bucketname
 	 * @param bucketpass
 	 */
-	public void createConnection(String[] ips, String bucketname, String bucketpass) {
-		
+	public void createConnection(String[] ips) {
 		ArrayList<String> ipList = new ArrayList();
 		for (int i = 0; i < ips.length; i++) {
 			String string = ips[i];
 			ipList.add(string);
 		}
-		this.storeBucketReference( ipList, bucketname, bucketpass );
-		
+		this.initCluster( ipList );
 	}
 	/**
-	 * saves and creates new couchbase bucket to hashMap
+	 * creates cluster connection
 	 * should be called from contextInitialized [ ServletContextListener ]
 	 * @param ips ip[] of server ex: ["127.0.0.1","devstackio.com"]
 	 * @param bucketname
 	 * @param bucketpass 
 	 */
-	public void createConnection(ArrayList<String> ips, String bucketname, String bucketpass) {
-		
-		this.storeBucketReference(ips, bucketname, bucketpass);
-		
+	public void createConnection(ArrayList<String> ips) {
+		this.initCluster( ips );
 	}
-	private void storeBucketReference(ArrayList<String> ips,String bucketname, String bucketpass) {
-
-		ArrayList<String>ipList = ips;
-		String bName = bucketname;
-		String bPass = bucketpass;
+	private void initCluster(ArrayList<String> ips) {
 
 		try {
-			cluster = CouchbaseCluster.create( ipList );
+			cluster = CouchbaseCluster.create( ips );
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	public void addBucketToCluster( String bucketname, String bucketpass ) {
+		String bName = bucketname;
+		String bPass = bucketpass;
+		try {
 			Bucket bucket = cluster.openBucket( bName, bPass);
 			this.getBuckets().put( bName, bucket);
 			

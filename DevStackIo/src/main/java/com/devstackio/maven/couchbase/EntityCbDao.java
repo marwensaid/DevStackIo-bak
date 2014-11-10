@@ -4,10 +4,12 @@ import com.couchbase.client.java.Bucket;
 import com.couchbase.client.java.PersistTo;
 import com.couchbase.client.java.document.JsonDocument;
 import com.couchbase.client.java.document.JsonLongDocument;
+import com.couchbase.client.java.document.RawJsonDocument;
 import com.couchbase.client.java.document.json.JsonObject;
 import com.couchbase.client.java.error.DocumentAlreadyExistsException;
 import com.couchbase.client.java.error.DocumentDoesNotExistException;
 import com.couchbase.client.java.transcoder.JsonTranscoder;
+import com.couchbase.client.java.transcoder.RawJsonTranscoder;
 import com.devstackio.maven.application.config.AbstractAppData;
 import com.google.gson.Gson;
 import com.devstackio.maven.entity.DefaultEntity;
@@ -84,12 +86,11 @@ public abstract class EntityCbDao implements IEntityDao {
 				entity.setId( entityId );
 			}
 			
-			JsonObject jsonObj = this.EntityToJsonObject( entity );
-			
+			RawJsonDocument rJsonDoc = this.convertToRawJsonDoc( entity.getDocId(), entity );
 			returnobj = prefix+":"+entity.getId();
-			JsonDocument jsonDocument = this.JsonObjectToJsonDocument( returnobj, jsonObj );
-			bucket.insert( jsonDocument,PersistTo.MASTER );
-			String logMsg = "-- tried upsert on : " + jsonDocument + " --";
+			
+			bucket.insert( rJsonDoc,PersistTo.MASTER );
+			String logMsg = "-- tried upsert on : " + rJsonDoc + " --";
 			this.ioLogger.logTo("DevStackIo-debug", Level.INFO, logMsg);
 			
 		} catch (DocumentAlreadyExistsException e) {
@@ -185,11 +186,11 @@ public abstract class EntityCbDao implements IEntityDao {
 		try {
 			DefaultEntity entity = (DefaultEntity) entityobj;
 			docId = entity.getPrefix()+":"+entity.getId();
-			JsonObject jsonObj = this.EntityToJsonObject( entity );
-			JsonDocument jsonDocument = this.JsonObjectToJsonDocument( docId, jsonObj );
 			
-			bucket.replace( jsonDocument,PersistTo.MASTER );
-			String logMsg = "-- tried replace on : " + jsonDocument + " --";
+			RawJsonDocument rJsonDoc = this.convertToRawJsonDoc( entity.getDocId(), entity );
+			
+			bucket.replace( rJsonDoc,PersistTo.MASTER );
+			String logMsg = "-- tried replace on : " + rJsonDoc + " --";
 			this.ioLogger.logTo("DevStackIo-debug", Level.INFO, logMsg);
 			
 		} catch (DocumentDoesNotExistException e) {
@@ -208,10 +209,10 @@ public abstract class EntityCbDao implements IEntityDao {
 			docId = entity.getPrefix()+":"+this.getAppData().getUuid();
 			String logMsg = "update to session call : docid is : " + docId;
 			this.ioLogger.logTo("DevStackIo-debug", Level.INFO, logMsg);
-			JsonObject jsonObj = this.EntityToJsonObject( entity );
-			JsonDocument jsonDocument = this.JsonObjectToJsonDocument( docId, jsonObj );
 			
-			bucket.replace( jsonDocument,PersistTo.MASTER );
+			RawJsonDocument rJsonDoc = this.convertToRawJsonDoc( entity.getDocId(), entity );
+			
+			bucket.replace( rJsonDoc,PersistTo.MASTER );
 			
 		} catch (DocumentDoesNotExistException e) {
 			this.ioLogger.logTo("DevStackIo-debug", Level.INFO, "document : " + docId + " not found in couchbase.");
@@ -253,7 +254,7 @@ public abstract class EntityCbDao implements IEntityDao {
 	/**
 	 * creates full JsonDocument required for inserting to couchbase
 	 * @param docid should be entity.prefix() + ":" + entity.getId();
-	 * @param jsonobj created by {@link #EntityToJsonObject(Object) EntityToJsonObject};
+	 * @param jsonobj created by {@link #convertToRawJsonDoc(Object) convertToRawJsonDoc};
 	 * @return 
 	 */
 	protected JsonDocument JsonObjectToJsonDocument( String docid, JsonObject jsonobj ) {
@@ -272,16 +273,17 @@ public abstract class EntityCbDao implements IEntityDao {
 	 * @param entityobj
 	 * @return 
 	 */
-	protected JsonObject EntityToJsonObject( Object entityobj ) {
+	protected RawJsonDocument convertToRawJsonDoc( String docid, Object entityobj ) {
 		
-		JsonObject returnobj = null;
+		RawJsonDocument returnobj = null;
 		Gson gson = new Gson();
-		String jsonString = "";
-		JsonTranscoder transcoder = new JsonTranscoder();
+		String docId = docid;
+		String jsonData = "";
 		
 		try {
-			jsonString = gson.toJson( entityobj );
-			returnobj = transcoder.stringToJsonObject( jsonString );
+			jsonData = gson.toJson( entityobj );
+			returnobj = RawJsonDocument.create( docId , jsonData );
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

@@ -18,11 +18,22 @@ public class DefaultEntity {
 	public void setId(String id) {
 		this.id = id;
 	}
+	/**
+	 * 
+	 * @return getClass().getSimpleName()
+	 */
 	public String getPrefix() {
 		return this.getClass().getSimpleName();
 	}
 	public void setPrefix(String prefix) {
 		this.prefix = prefix;
+	}
+	/**
+	 * couchbase document id
+	 * @return getPrefix()+":"+this.getId();
+	 */
+	public String getDocId() {
+		return this.getPrefix()+":"+this.getId();
 	}
 	
 }
