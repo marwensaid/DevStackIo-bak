@@ -23,5 +23,5 @@ Classes to facilitate EE 7 Web Application Development using java-client 2+
 <h3>InProgress</h3>
 will be posting link to detailed tutorials here after first 'official' release
 
-<h3>contact</h3>
+<h3>Contact</h3>
 any questions / comments ect. please write io@devstackio.com
