@@ -17,7 +17,7 @@ Classes to facilitate EE 7 Web Application Development using java-client 2+
 &lt;dependency&gt;<br />
 	&lt;groupId&gt;com.devstackio&lt;/groupId&gt;<br />
 	&lt;artifactId&gt;DevStackIo&lt;/artifactId&gt;<br />
-	&lt;version&gt;2.0.1.003&lt;/version&gt;<br />
+	&lt;version&gt;2.0.1.004&lt;/version&gt;<br />
 &lt;/dependency&gt;
 
 <h3>InProgress</h3>
