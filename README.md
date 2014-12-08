@@ -17,11 +17,11 @@ Classes to facilitate EE 7 Web Application Development using java-client 2+
 &lt;dependency&gt;<br />
 	&lt;groupId&gt;com.devstackio&lt;/groupId&gt;<br />
 	&lt;artifactId&gt;DevStackIo&lt;/artifactId&gt;<br />
-	&lt;version&gt;2.0.1.005&lt;/version&gt;<br />
+	&lt;version&gt;2.0.1.008&lt;/version&gt;<br />
 &lt;/dependency&gt;
 
 <h3>InProgress</h3>
 will be posting link to detailed tutorials here after first 'official' release
 
 <h3>Contact</h3>
-any questions / comments ect. please write io@devstackio.com
+io@devstackio.com
