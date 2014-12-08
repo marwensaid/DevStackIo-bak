@@ -1,12 +1,12 @@
-package com.devstackio.maven.couchbase;
+package com.devstackio.maven.databaseshared;
 
 /**
  *
  * @author devstackio
  */
-public interface IEntityDao<T> {
+public interface IDao<T> {
 	/**
-	 * creates entity in database
+	 * database CRUD
 	 * @param entityobj
 	 * @return id of entity after insertion
 	 */

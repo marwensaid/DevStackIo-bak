@@ -1,8 +1,6 @@
 package com.devstackio.maven.couchbase;
 
 import com.couchbase.client.java.document.JsonDocument;
-import com.devstackio.maven.application.config.AbstractAppData;
-import com.devstackio.maven.application.config.AppData;
 import com.google.gson.Gson;
 import javax.enterprise.context.RequestScoped;
 
@@ -14,8 +12,6 @@ import javax.enterprise.context.RequestScoped;
  */
 @RequestScoped
 public class ContractCbDao extends EntityCbDao {
-	
-	private final AbstractAppData appData = new AppData();
 
 	@Override
 	public Object convert(JsonDocument jd) throws NullPointerException {
@@ -25,11 +21,6 @@ public class ContractCbDao extends EntityCbDao {
 		entityJson = jd.content().toString();
 		return this.gson.fromJson( entityJson, ContractEntity.class );
 
-	}
-
-	@Override
-	protected AbstractAppData getAppData() {
-		return appData;
 	}
 
 	@Override

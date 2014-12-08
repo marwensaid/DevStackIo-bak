@@ -4,6 +4,7 @@ import com.couchbase.client.java.Bucket;
 import com.couchbase.client.java.Cluster;
 import com.couchbase.client.java.CouchbaseCluster;
 import com.couchbase.client.java.document.JsonDocument;
+import com.couchbase.client.java.view.Stale;
 import com.couchbase.client.java.view.ViewQuery;
 import com.couchbase.client.java.view.ViewResult;
 import com.couchbase.client.java.view.ViewRow;
@@ -132,7 +133,7 @@ public class CbDao {
 		
 		try {
 			ViewQuery viewQuery = ViewQuery.from(designDoc, viewName);
-			
+			viewQuery.stale(Stale.FALSE);
 			ViewResult viewResult = bucket.query( viewQuery );
 			Iterator<ViewRow> viewResults = viewResult.rows();
 			

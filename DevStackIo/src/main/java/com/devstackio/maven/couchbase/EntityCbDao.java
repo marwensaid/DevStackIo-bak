@@ -1,5 +1,6 @@
 package com.devstackio.maven.couchbase;
 
+import com.devstackio.maven.databaseshared.IDao;
 import com.couchbase.client.java.Bucket;
 import com.couchbase.client.java.PersistTo;
 import com.couchbase.client.java.document.JsonDocument;
@@ -8,9 +9,7 @@ import com.couchbase.client.java.document.RawJsonDocument;
 import com.couchbase.client.java.document.json.JsonObject;
 import com.couchbase.client.java.error.DocumentAlreadyExistsException;
 import com.couchbase.client.java.error.DocumentDoesNotExistException;
-import com.couchbase.client.java.transcoder.JsonTranscoder;
-import com.couchbase.client.java.transcoder.RawJsonTranscoder;
-import com.devstackio.maven.application.config.AbstractAppData;
+import com.devstackio.maven.application.config.AppData;
 import com.google.gson.Gson;
 import com.devstackio.maven.entity.DefaultEntity;
 import com.devstackio.maven.logging.IoLogger;
@@ -20,19 +19,19 @@ import javax.inject.Inject;
 import org.apache.log4j.Level;
 
 /**
- * if entity Dao is going to couchbase, extend this
- * has the two conversion methods needed to store documents into couchbase using java client 2.0.1 for couchbase 3
+ * if entity Dao is going to couchbase : extend this
+ * has main methods needed to store and read documents into couchbase using java client 2.0.1 for couchbase 3
  * @author devstackio
  */
 @RequestScoped
-public abstract class EntityCbDao implements IEntityDao {
+public abstract class EntityCbDao implements IDao {
 	
 	protected String bucketName;
 	protected Gson gson;
 	protected UuidGenerator uuidGenerator;
 	protected CbDao cbDao;
 	protected IoLogger ioLogger;
-	protected AbstractAppData appData;
+	protected AppData appData;
 	
 	/**
 	 * bucket name used for all crud ops on sub entity object
@@ -45,12 +44,11 @@ public abstract class EntityCbDao implements IEntityDao {
 	 * @return 
 	 */
 	public abstract Object convert( JsonDocument jsonDoc ) throws NullPointerException;
-	/**
-	 * for generating session store into couchbase we need to implement getAppData, returning an object extending AbstractAppData with an appName
-	 * @return 
-	 */
-	protected abstract AbstractAppData getAppData();
 	
+	@Inject
+	public void setAppData(AppData appdata) {
+		this.appData = appdata;
+	}
 	@Inject
 	public void setIoLogger(IoLogger iologger) {
 		this.ioLogger = iologger;
@@ -76,6 +74,7 @@ public abstract class EntityCbDao implements IEntityDao {
 		String returnobj = "";
 		Bucket bucket = this.getBucket();
 		String prefix = "";
+
 		try {
 			DefaultEntity entity = (DefaultEntity) entityobj;
 			prefix = entity.getPrefix();
@@ -126,7 +125,7 @@ public abstract class EntityCbDao implements IEntityDao {
 	}
 	/**
 	 * used to query simple gets from couchbase
-	 * @param id
+	 * @param id full id of document (ex: doc.getPrefix() + ":" + doc.getId() )
 	 * @return object as entityobj (ex: ContractEntity)
 	 * *requires protected Object convert( JsonDocument jsonDoc ) to be implemented in subclass
 	 */
@@ -329,6 +328,10 @@ public abstract class EntityCbDao implements IEntityDao {
 			e.printStackTrace();
 		}
 		return returnobj;
+	}
+	
+	public AppData getAppData() {
+		return this.appData;
 	}
 	
 }
