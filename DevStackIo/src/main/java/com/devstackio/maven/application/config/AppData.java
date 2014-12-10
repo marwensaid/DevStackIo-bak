@@ -37,13 +37,22 @@ public class AppData extends AbstractAppData{
 	public void init() {
 		try {
 			Properties config = this.propertyLoader.loadFromThread(Thread.currentThread(), PARAM_CONFIG_FILENAME );
-			this.appName = config.getProperty( PARAM_APP_NAME );
-			this.couchbaseIps = this.parseCouchbaseIps( config );
-			this.setMainCbBucket(config.getProperty( PARAM_MAIN_BUCKET_NAME ));
-			this.setMainCbPass(config.getProperty( PARAM_MAIN_BUCKET_PASS ));
+			this.setParams( config );
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	/**
+	 * for running outside of web context
+	 */
+	public void initWithConfig( Properties config ) {
+		this.setParams( config );
+	}
+	private void setParams( Properties config ) {
+		this.appName = config.getProperty( PARAM_APP_NAME );
+		this.couchbaseIps = this.parseCouchbaseIps( config );
+		this.setMainCbBucket(config.getProperty( PARAM_MAIN_BUCKET_NAME ));
+		this.setMainCbPass(config.getProperty( PARAM_MAIN_BUCKET_PASS ));
 	}
 	private ArrayList<String> parseCouchbaseIps( Properties props ) {
 		ArrayList<String> returnobj = new ArrayList();

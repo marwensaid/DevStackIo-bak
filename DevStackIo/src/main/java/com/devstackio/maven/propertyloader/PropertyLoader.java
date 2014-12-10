@@ -1,5 +1,6 @@
 package com.devstackio.maven.propertyloader;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 import javax.enterprise.context.ApplicationScoped;
@@ -16,13 +17,30 @@ public class PropertyLoader {
 	 * @param filepath directory starting at META-INF/
 	 * @return 
 	 */
-	public Properties loadProperties( String filepath ) {
+	public Properties loadProperties( String file ) {
 		
+		return this.loadProperties( file, "META-INF" );
+		
+	}
+	/**
+	 * load properties from path+file
+	 * @param file
+	 * @param path
+	 * @return 
+	 */
+	public Properties loadProperties( String file, String path ) {
 		Properties returnobj = new Properties();
-		String path = "META-INF/"+filepath;
+		String fullPath = path+file;
 
-		InputStream in = ClassLoader.getSystemResourceAsStream( path );
+		InputStream in = new InputStream() {
+
+			@Override
+			public int read() throws IOException {
+				return 0;
+			}
+		};
 		try {
+			in = ClassLoader.getSystemResourceAsStream( fullPath );
 			returnobj.load(in);
 			
 		} catch (Exception e) {
@@ -35,7 +53,6 @@ public class PropertyLoader {
 			}
 		}
 		return returnobj;
-		
 	}
 	/**
 	 * used to grab Properties if needed @ ApplicationContextListener
