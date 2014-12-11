@@ -9,6 +9,10 @@ import com.devstackio.maven.entity.DefaultEntity;
 public class ContractEntity extends DefaultEntity {
 	
 	private String contract;
+	
+	public ContractEntity() {
+		this.bucket = "devStackIo";
+	}
 
 	public String getContract() {
 		return contract;

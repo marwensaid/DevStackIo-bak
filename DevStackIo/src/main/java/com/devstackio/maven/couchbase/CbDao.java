@@ -1,104 +1,140 @@
 package com.devstackio.maven.couchbase;
 
+import com.devstackio.maven.databaseshared.IDao;
 import com.couchbase.client.java.Bucket;
-import com.couchbase.client.java.Cluster;
-import com.couchbase.client.java.CouchbaseCluster;
+import com.couchbase.client.java.PersistTo;
 import com.couchbase.client.java.document.JsonDocument;
+import com.couchbase.client.java.document.JsonLongDocument;
+import com.couchbase.client.java.document.RawJsonDocument;
+import com.couchbase.client.java.document.json.JsonObject;
+import com.couchbase.client.java.error.DocumentAlreadyExistsException;
+import com.couchbase.client.java.error.DocumentDoesNotExistException;
 import com.couchbase.client.java.view.Stale;
 import com.couchbase.client.java.view.ViewQuery;
 import com.couchbase.client.java.view.ViewResult;
 import com.couchbase.client.java.view.ViewRow;
+import com.devstackio.maven.application.config.AppData;
+import com.google.gson.Gson;
+import com.devstackio.maven.entity.DefaultEntity;
 import com.devstackio.maven.logging.IoLogger;
+import com.devstackio.maven.uuid.UuidGenerator;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
-import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
+import org.apache.log4j.Level;
 
 /**
- * connecting / updating / retrieving couchbase data
- *
+ * if entity Dao is going to couchbase : extend this
+ * has main methods needed to store and read documents into couchbase using java client 2.0.1 for couchbase 3
  * @author devstackio
  */
-@ApplicationScoped
-public class CbDao {
+@RequestScoped
+public class CbDao extends CbConnectionManager implements IDao {
 	
-	private static Cluster cluster;
-	private HashMap<String,Bucket> buckets;
-	private IoLogger ioLogger;
-
+	protected String bucketName;
+	protected Gson gson = new Gson();
+	protected UuidGenerator uuidGenerator;
+	protected IoLogger ioLogger;
+	protected AppData appData;
+	
+	@Inject
+	public void setAppData(AppData appdata) {
+		this.appData = appdata;
+	}
 	@Inject
 	public void setIoLogger(IoLogger iologger) {
 		this.ioLogger = iologger;
 	}
-	public CbDao() {
-		this.buckets = new HashMap();
+	@Inject
+	public void setUuidGenerator(UuidGenerator uuidgenerator) {
+		this.uuidGenerator = uuidgenerator;
 	}
 	/**
-	 * use if needed outside web application ( running core Java files )
-	 * @param webBased
+	 * creates entity in database
+	 * @param obj
+	 * @return id of entity after insertion
+	 * catches DocumentAlreadyExistsException already in couchbase - logs to "DocAlreadyExists.log"
+	 * persists to Master node
 	 */
-	public CbDao( boolean webBased ) {
-		this();
-		if( !webBased ) {
-			this.ioLogger = new IoLogger();
-		}
-	}
-	
-	/**
-	 * creates cluster connection
-	 * should be called from contextInitialized [ ServletContextListener ]
-	 * @param ips ip of server ex: {"127.0.0.1", "devstackio.com"}
-	 * @param bucketname
-	 * @param bucketpass
-	 */
-	public void createConnection(String[] ips) {
-		ArrayList<String> ipList = new ArrayList();
-		for (int i = 0; i < ips.length; i++) {
-			String string = ips[i];
-			ipList.add(string);
-		}
-		this.initCluster( ipList );
-	}
-	/**
-	 * creates cluster connection
-	 * should be called from contextInitialized [ ServletContextListener ]
-	 * @param ips ip[] of server ex: ["127.0.0.1","devstackio.com"]
-	 * @param bucketname
-	 * @param bucketpass 
-	 */
-	public void createConnection(ArrayList<String> ips) {
-		this.initCluster( ips );
-	}
-	private void initCluster(ArrayList<String> ips) {
+	@Override
+	public String create( DefaultEntity entityobj ) {
+		
+		String returnobj = "";
+		String prefix = "";
+		DefaultEntity entity = entityobj;
+		Bucket bucket = this.getBucket( entity.getBucket() );
 
 		try {
-			cluster = CouchbaseCluster.create( ips );
+			prefix = entity.getPrefix();
+			
+			String entid = entity.getId();
+			if( entid == null || entid.isEmpty() ) {
+				String entityId = this.generateId( bucket, prefix );
+				entity.setId( entityId );
+			}
+			
+			RawJsonDocument rJsonDoc = this.convertToRawJsonDoc( entity.getDocId(), entity );
+			returnobj = prefix+":"+entity.getId();
+			
+			bucket.insert( rJsonDoc,PersistTo.MASTER );
+			String logMsg = "-- tried upsert on : " + rJsonDoc + " --";
+			this.ioLogger.logTo("DevStackIo-debug", Level.INFO, logMsg);
+			
+		} catch (DocumentAlreadyExistsException e) {
+			this.ioLogger.logTo("DevStackIo-debug", Level.INFO, "document : " + returnobj + " already exists in couchbase.");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return returnobj;
+	}
+	/**
+	 * stores this entity object to couchbase using user's uuid instead of an incremented id
+	 * uuid will be stored as browser cookie
+	 * @param entityobj
+	 * @return 
+	 */
+	public String createToSession( Object entityobj ) {
+		
+		String returnobj = "";
+		String uuid = "";
+		
+		try {
+			uuid = this.uuidGenerator.getUuid(this.getAppData().getAppName());
+			DefaultEntity entity = (DefaultEntity) entityobj;
+			entity.setId( uuid );
+			returnobj = this.create( entity );
 			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		
+		return returnobj;
+		
 	}
-	public void addBucketToCluster( String bucketname, String bucketpass ) {
-		String bName = bucketname;
-		String bPass = bucketpass;
+	/**
+	 * used to query simple gets from couchbase
+	 * @param <T>
+	 * @param id full id of document (ex: doc.getPrefix() + ":" + doc.getId() )
+	 * @param classtype
+	 * @return object as entityobj (ex: ContractEntity)
+	 * *requires protected Object convert( JsonDocument jsonDoc ) to be implemented in subclass
+	 */
+	@Override
+	public <T> T read( String id, T t) {
+		
+		T returnobj = null;
+		DefaultEntity entity = (DefaultEntity) t;
+		Bucket bucket = this.getBucket( entity.getBucket() );
+		String docId = id;
+		String entityJson = "";
 		try {
-			Bucket bucket = cluster.openBucket( bName, bPass);
-			this.getBuckets().put( bName, bucket);
+			JsonDocument jd = bucket.get(docId);
+			entityJson = jd.content().toString();
+			returnobj = (T) this.gson.fromJson( entityJson, t.getClass() );
 			
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-	public void closeClusterConnection() {
-		this.cluster.disconnect();
-	}
-	public Bucket getBucket( String bucketname ) {
-		
-		Bucket returnobj = null;
-		
-		try {
-			returnobj = this.getBuckets().get( bucketname );
+		} catch (NullPointerException e) {
+			this.ioLogger.logTo("DevStackIo-debug", Level.INFO, "document : " + docId + " not found in couchbase.");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -106,16 +142,180 @@ public class CbDao {
 		return returnobj;
 	}
 	/**
-	 * should be called from contextDestroyed [ ServletContextListener ]
+	 * if document does not exist in couchbase will return null
+	 * @param entityobj
+	 * @return 
 	 */
-	public void destroyConnection(String bucketname) {
+	public <T> T readFromSession( DefaultEntity entityobj, T t) {
+		
+		T returnobj = null;
+		DefaultEntity entity = entityobj;
+		Bucket bucket = this.getBucket( entity.getBucket() );
+		String docId = "";
+		String entityJson = "";
 		try {
-			//this.ioLogger.logTo(this.LOGFILE, Level.INFO, "destroyingConnection to : " + bucketname );
-			this.getBuckets().get(bucketname).close();
+			docId = entity.getPrefix()+":"+this.appData.getUuid();
+			String logMsg = "trying readFromSession using docid : " + docId + " bucket is : " + bucket;
+			this.ioLogger.logTo("DevStackIo-debug", Level.INFO, logMsg);
+			entity.setId( docId );
+			JsonDocument jd = bucket.get(docId);
+			entityJson = jd.content().toString();
+			returnobj = (T) this.gson.fromJson( entityJson, t.getClass() );
+			
+		} catch (NullPointerException e) {
+			
 		} catch (Exception e) {
-			//this.ioLogger.logTo(this.LOGFILE, Level.ERROR, "destroyingConnection to : " + bucketname + " : error : " + e.getMessage());
 			e.printStackTrace();
 		}
+		return returnobj;
+	}
+	/**
+	 * updates entityObject to couchbase
+	 * catches DocumentDoesNotExistException if not found - logs to "DocDoesNotExist.log"
+	 * persists to Master node
+	 * @param entityobj 
+	 */
+	@Override
+	public void update( DefaultEntity entityobj ) {
+		
+		DefaultEntity entity = entityobj;
+		Bucket bucket = this.getBucket( entity.getBucket() );
+		String docId = "";
+		try {
+			docId = entity.getPrefix()+":"+entity.getId();
+			
+			RawJsonDocument rJsonDoc = this.convertToRawJsonDoc( entity.getDocId(), entity );
+			
+			bucket.replace( rJsonDoc,PersistTo.MASTER );
+			String logMsg = "-- tried replace on : " + rJsonDoc + " --";
+			this.ioLogger.logTo("DevStackIo-debug", Level.INFO, logMsg);
+			
+		} catch (DocumentDoesNotExistException e) {
+			this.ioLogger.logTo("DevStackIo-debug", Level.INFO, "document : " + docId + " not found in couchbase.");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+	}
+	public void updateToSession( DefaultEntity entityobj ) {
+		
+		DefaultEntity entity = entityobj;
+		Bucket bucket = this.getBucket( entity.getBucket() );
+		String docId = "";
+		try {
+			docId = entity.getPrefix()+":"+this.getAppData().getUuid();
+			String logMsg = "update to session call : docid is : " + docId;
+			this.ioLogger.logTo("DevStackIo-debug", Level.INFO, logMsg);
+			
+			RawJsonDocument rJsonDoc = this.convertToRawJsonDoc( entity.getDocId(), entity );
+			
+			bucket.replace( rJsonDoc,PersistTo.MASTER );
+			
+		} catch (DocumentDoesNotExistException e) {
+			this.ioLogger.logTo("DevStackIo-debug", Level.INFO, "document : " + docId + " not found in couchbase.");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+	}
+	/**
+	 * persists to Master node
+	 * @param docid 
+	 */
+	@Override
+	public void delete( String docid, DefaultEntity entityobj ) {
+		
+		Bucket bucket = this.getBucket( entityobj.getBucket() );
+		try {
+			bucket.remove( docid,PersistTo.MASTER );
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
+	/**
+	 * creates full JsonDocument required for inserting to couchbase
+	 * @param docid should be entity.prefix() + ":" + entity.getId();
+	 * @param jsonobj created by {@link #convertToRawJsonDoc(Object) convertToRawJsonDoc};
+	 * @return 
+	 */
+	protected JsonDocument JsonObjectToJsonDocument( String docid, JsonObject jsonobj ) {
+		
+		JsonDocument returnobj = null;
+		try {
+			returnobj = JsonDocument.create( docid, jsonobj );
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return returnobj;
+		
+	}
+	/**
+	 * uses gson and JsonTranscoder to create a JsonDocument for use with {@link #JsonObjectToJsonDocument(String, JsonObject) JsonObjectToJsonDocument}
+	 * @param entityobj
+	 * @return 
+	 */
+	protected RawJsonDocument convertToRawJsonDoc( String docid, Object entityobj ) {
+		
+		RawJsonDocument returnobj = null;
+		Gson gson = new Gson();
+		String docId = docid;
+		String jsonData = "";
+		
+		try {
+			jsonData = gson.toJson( entityobj );
+			returnobj = RawJsonDocument.create( docId , jsonData );
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		return returnobj;
+		
+	}
+	
+	/**
+	 * increments entity prefix counter on couchbase
+	 *
+	 * @return returns id related to String (entity)prefix passed in(ex: "22")
+	 */
+	protected String generateId( Bucket bucket, String prefix) {
+		
+		String returnobj = "";
+		Bucket cbBucket = bucket;
+
+		try {
+			JsonLongDocument jsonLongDoc = cbBucket.counter(prefix, 1);
+			Long idLong = jsonLongDoc.content();
+			returnobj = Long.toString( idLong );
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		return returnobj;
+		
+	}
+	/**
+	 * @return entity.prefix + ":" + uuid
+	 */
+	public String getEntitySessionId() {
+		
+		String returnobj = "";
+		try {
+			String className = this.getClass().getName();
+			int index = className.indexOf("Entity");
+			returnobj = className.substring( 0,index+6 );
+			returnobj += ":" + this.uuidGenerator.getUuid( this.appData.getAppName() );
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return returnobj;
+	}
+	
+	public AppData getAppData() {
+		return this.appData;
 	}
 	
 	/**
@@ -147,10 +347,5 @@ public class CbDao {
 		
 		return returnobj;
 	}
-
-	public HashMap<String,Bucket> getBuckets() {
-		return buckets;
-	}
 	
 }
-

@@ -7,7 +7,8 @@ package com.devstackio.maven.entity;
 public class DefaultEntity {
 	
 	protected String id;
-	private String prefix;
+	protected String prefix;
+	protected transient String bucket;
 	
 	public DefaultEntity() {
 		this.prefix = this.getClass().getSimpleName();
@@ -34,6 +35,14 @@ public class DefaultEntity {
 	 */
 	public String getDocId() {
 		return this.getPrefix()+":"+this.getId();
+	}
+
+	public String getBucket() {
+		return bucket;
+	}
+
+	public void setBucket(String bucket) {
+		this.bucket = bucket;
 	}
 	
 }
