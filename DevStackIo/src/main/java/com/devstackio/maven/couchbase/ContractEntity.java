@@ -11,7 +11,7 @@ public class ContractEntity extends DefaultEntity {
 	private String contract;
 	
 	public ContractEntity() {
-		this.bucket = "devStackIo";
+		this.bucket = "default";
 	}
 
 	public String getContract() {

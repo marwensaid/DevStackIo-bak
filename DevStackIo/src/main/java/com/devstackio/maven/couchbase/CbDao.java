@@ -51,6 +51,23 @@ public class CbDao extends CbConnectionManager implements IDao {
 		this.uuidGenerator = uuidgenerator;
 	}
 	/**
+	 * if needed outside web context
+	 */
+	public void initializeStandalone( String bucket, String pass) {
+		try {
+			this.setIoLogger( ioLogger );
+			this.setUuidGenerator( uuidGenerator );
+			AppData appData = new AppData();
+			appData.setMainCbBucket( bucket );
+			appData.setMainCbPass( pass );
+			this.setAppData( appData );
+			System.out.println("[CbDao initialized for standalone use]");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	/**
 	 * creates entity in database
 	 * @param obj
 	 * @return id of entity after insertion
