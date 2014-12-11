@@ -163,19 +163,21 @@ public class CbDao extends CbConnectionManager implements IDao {
 	 * @param entityobj
 	 * @return 
 	 */
-	public <T> T readFromSession( DefaultEntity entityobj, T t) {
+	public <T> T readFromSession( T t) {
 		
 		T returnobj = null;
-		DefaultEntity entity = entityobj;
-		Bucket bucket = this.getBucket( entity.getBucket() );
+		
 		String docId = "";
 		String entityJson = "";
 		try {
+			DefaultEntity entity = (DefaultEntity) t;
 			docId = entity.getPrefix()+":"+this.appData.getUuid();
+			Bucket bucket = this.getBucket( entity.getBucket() );
 			String logMsg = "trying readFromSession using docid : " + docId + " bucket is : " + bucket;
 			this.ioLogger.logTo("DevStackIo-debug", Level.INFO, logMsg);
 			entity.setId( docId );
 			JsonDocument jd = bucket.get(docId);
+			
 			entityJson = jd.content().toString();
 			returnobj = (T) this.gson.fromJson( entityJson, t.getClass() );
 			
