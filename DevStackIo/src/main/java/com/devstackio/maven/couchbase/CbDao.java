@@ -20,7 +20,7 @@ import com.devstackio.maven.logging.IoLogger;
 import com.devstackio.maven.uuid.UuidGenerator;
 import java.util.ArrayList;
 import java.util.Iterator;
-import javax.enterprise.context.RequestScoped;
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import org.apache.log4j.Level;
 
@@ -29,7 +29,7 @@ import org.apache.log4j.Level;
  * has main methods needed to store and read documents into couchbase using java client 2.0.1 for couchbase 3
  * @author devstackio
  */
-@RequestScoped
+@ApplicationScoped
 public class CbDao extends CbConnectionManager implements IDao {
 	
 	protected String bucketName;
@@ -159,13 +159,13 @@ public class CbDao extends CbConnectionManager implements IDao {
 		return returnobj;
 	}
 	/**
-	 * if document does not exist in couchbase will return null
+	 * if document does not exist in couchbase will create it
 	 * @param entityobj
 	 * @return 
 	 */
 	public <T> T readFromSession( T t) {
 		
-		T returnobj = null;
+		T returnobj = t;
 		
 		String docId = "";
 		String entityJson = "";
@@ -182,7 +182,8 @@ public class CbDao extends CbConnectionManager implements IDao {
 			returnobj = (T) this.gson.fromJson( entityJson, t.getClass() );
 			
 		} catch (NullPointerException e) {
-			
+			String generatedId = this.create((DefaultEntity) returnobj);
+			returnobj = this.read( generatedId, returnobj );
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

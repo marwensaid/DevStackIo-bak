@@ -165,6 +165,31 @@ public class TestCbDao {
 	}
 	
 	/**
+	 * reading a document that does not already exist in couchbase should auto-generate the document to couchbase session
+	 */
+	@Test
+	public void testEmptyReadFromSession() {
+		
+		ContractEntity entityResult = new ContractEntity();
+		String docId = "";
+		ContractEntity test = new ContractEntity();
+		
+		try {
+			entityResult = cbDao.readFromSession( entityResult );
+			docId = entityResult.getDocId();
+			System.out.println("session object created with id : " + docId);
+			
+			test = cbDao.read( docId, entityResult);
+			this.addTestDocId( docId );
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		assertEquals("doc was created after not being found in session : '"+docId+"' saved into new couchbase document", docId, test.getDocId());
+	}
+	
+	/**
 	 * Test update method of EntityCbDao (abstract super class)
 	 */
 	@Test
