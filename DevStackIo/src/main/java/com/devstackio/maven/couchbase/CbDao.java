@@ -97,9 +97,6 @@ public class CbDao extends CbConnectionManager implements IDao {
 			bucket.insert( rJsonDoc,PersistTo.MASTER );
 			String logMsg = "-- tried upsert on : " + rJsonDoc + " --";
 			this.ioLogger.logTo("DevStackIo-debug", Level.INFO, logMsg);
-			
-		} catch (DocumentAlreadyExistsException e) {
-			this.ioLogger.logTo("DevStackIo-debug", Level.INFO, "document : " + returnobj + " already exists in couchbase.");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

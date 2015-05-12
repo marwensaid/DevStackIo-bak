@@ -61,13 +61,15 @@ public class TestCbDao {
 		try {
 			System.out.println("-- removing test documents created from couchbase --");
 			for (int i = 0; i < testDocIds.size(); i++) {
-				bucket.remove( testDocIds.get(i) );
+                            System.out.println("removing : " + testDocIds.get(i).toString());
+                            bucket.remove( testDocIds.get(i) );
 			}
 			bucket.close();
 			cbDao.destroyConnection( demoBucketName );
 			cbDao.closeClusterConnection();
 			
 		} catch (Exception e) {
+                    System.out.println("exception caught on line 71....");
 			e.printStackTrace();
 		}
 	}
@@ -102,9 +104,10 @@ public class TestCbDao {
 			} else {
 				cbDao.createToSession( entity );
 			}
+                        
+                        returnobj = entity.getDocId();
 			
-			returnobj = entity.getPrefix()+":"+entity.getId();
-			this.addTestDocId( entity.getPrefix() );
+                        System.out.println("adding doc id to clean-up bag : " + returnobj);
 			this.addTestDocId( returnobj );
 			
 		} catch (Exception e) {
