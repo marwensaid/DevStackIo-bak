@@ -29,7 +29,7 @@ public class CbConnectionManager {
 		this.buckets = new HashMap();
 	}
 	/**
-	 * use if needed outside web application ( running core Java files )
+	 * use false if needed outside web application ( running core Java files )
 	 * @param webBased
 	 */
 	public CbConnectionManager( boolean webBased ) {
