@@ -26,7 +26,7 @@ import org.apache.log4j.Level;
 
 /**
  * if entity Dao is going to couchbase : extend this
- * has main methods needed to store and read documents into couchbase using java client 2.0.1 for couchbase 3
+ * has main methods needed to store and read documents into couchbase using java client 2.1.3 for couchbase 3
  * @author devstackio
  */
 @ApplicationScoped
@@ -55,6 +55,8 @@ public class CbDao extends CbConnectionManager implements IDao {
 	 */
 	public void initializeStandalone( String bucket, String pass) {
 		try {
+                        this.ioLogger = new IoLogger();
+                        this.uuidGenerator = new UuidGenerator();
 			this.setIoLogger( ioLogger );
 			this.setUuidGenerator( uuidGenerator );
 			AppData appData = new AppData();
