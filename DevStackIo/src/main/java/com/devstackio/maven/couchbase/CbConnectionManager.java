@@ -14,7 +14,6 @@ import javax.inject.Inject;
  *
  * @author devstackio
  */
-@ApplicationScoped
 public class CbConnectionManager {
 	
 	private static Cluster cluster;
