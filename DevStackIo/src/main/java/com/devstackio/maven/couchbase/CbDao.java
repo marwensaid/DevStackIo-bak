@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
-import javax.inject.Named;
 import org.apache.log4j.Level;
 
 /**
@@ -129,16 +128,24 @@ public class CbDao extends CbConnectionManager implements IDao {
         uuid = this.uuidGenerator.getUuid(this.getAppData().getAppName());
         DefaultEntity entity = (DefaultEntity) entityobj;
         entity.setId(uuid);
+        Bucket bucket = this.getBucket(entity.getBucket());
 
         try {
 
-            returnobj = this.create(entity);
+            System.out.println("creating session entity! : " + entity.getId());
+            
+            JsonDocument found = bucket.get( entity.getDocId() );
+            if (found == null) {
+                // doc not found
+                System.out.println("doc not found call...");
+                returnobj = this.create(entity);
+            } else {
+                // doc found
+                System.out.println("doc found - calling update -----");
+                this.update(entity);
+                returnobj = entity.getId();
+            }
 
-        } catch (DocumentAlreadyExistsException e) {
-            
-            this.update(entity);
-            returnobj = entity.getId();
-            
         } catch (Exception e) {
             e.printStackTrace();
         }
