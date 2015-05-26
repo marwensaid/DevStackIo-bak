@@ -1,5 +1,6 @@
 package com.devstackio.maven.application.config;
 
+import com.devstackio.maven.application.utils.BlitzUtils;
 import com.devstackio.maven.propertyloader.PropertyLoader;
 import java.util.ArrayList;
 import java.util.Properties;
@@ -38,6 +39,7 @@ public class AppData extends AbstractAppData {
             this.propertyLoader = new PropertyLoader();
             Properties config = this.propertyLoader.loadFromThread(Thread.currentThread(), PARAM_CONFIG_FILENAME);
             this.setParams(config);
+            
         } catch (Exception e) {
             e.printStackTrace();
         }
